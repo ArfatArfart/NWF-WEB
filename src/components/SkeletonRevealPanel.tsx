@@ -15,9 +15,16 @@ export default function SkeletonRevealPanel() {
   const hasInitializedMouse = useRef(false);
 
   useEffect(() => {
-    let animationFrameId: number | null = null;
-    let isIntersecting = false;
+    let animationFrameId: number = 0;
     let isRunning = false;
+    let isIntersecting = true;
+
+    const wakeLoop = () => {
+      if (!isRunning && isIntersecting) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    };
 
     const updatePointerPos = (clientX: number, clientY: number) => {
       if (!containerRef.current) return;
@@ -35,14 +42,6 @@ export default function SkeletonRevealPanel() {
       }
     };
 
-    const wakeLoop = () => {
-      if (!isRunning && isIntersecting) {
-        isRunning = true;
-        animationFrameId = requestAnimationFrame(renderLoop);
-      }
-    };
-
-    // Pointer events (Desktop mouse, trackpad, pen/stylus)
     const handlePointerDown = (e: PointerEvent) => {
       isInsideRef.current = true;
       setIsHovered(true);
@@ -105,7 +104,7 @@ export default function SkeletonRevealPanel() {
 
     const containerEl = containerRef.current;
     if (containerEl) {
-      containerEl.addEventListener('pointerdown', handlePointerDown, { passive: true });
+      containerEl.addEventListener('pointerdown', handlePointerDown);
       containerEl.addEventListener('pointerenter', handlePointerEnter);
       containerEl.addEventListener('pointermove', handlePointerMove, { passive: true });
       containerEl.addEventListener('pointerleave', handlePointerLeave);
@@ -127,15 +126,14 @@ export default function SkeletonRevealPanel() {
       hoverOpacityRef.current += (targetHover - hoverOpacityRef.current) * 0.12;
 
       // Ease smoothRef toward mouse/touch position
-      smoothRef.current.x += (mouseRef.current.x - smoothRef.current.x) * 0.14;
-      smoothRef.current.y += (mouseRef.current.y - smoothRef.current.y) * 0.14;
+      smoothRef.current.x += (mouseRef.current.x - smoothRef.current.x) * 0.12;
+      smoothRef.current.y += (mouseRef.current.y - smoothRef.current.y) * 0.12;
 
       const winW = containerRef.current?.offsetWidth || 800;
 
-      // Soft circular spotlight radius (responsive to container width and touch screen)
-      const isSmall = winW < 640;
+      // Soft circular spotlight radius (responsive to container width)
       const radius = Math.round(
-        Math.min(240, Math.max(90, winW * (isSmall ? 0.28 : 0.20)))
+        Math.min(240, Math.max(90, winW * 0.20))
       );
 
       if (revealRef.current) {
@@ -145,13 +143,13 @@ export default function SkeletonRevealPanel() {
           const cx = Math.round(smoothRef.current.x);
           const cy = Math.round(smoothRef.current.y);
 
-          // Hardware-accelerated GPU radial-gradient mask (eliminates expensive canvas toDataURL on every frame)
+          // Hardware-accelerated GPU radial-gradient mask (exact same visual stops as baseline canvas)
           const mask = `radial-gradient(circle ${radius}px at ${cx}px ${cy}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.35) 78%, rgba(0,0,0,0.1) 90%, transparent 100%)`;
           revealRef.current.style.maskImage = mask;
           revealRef.current.style.webkitMaskImage = mask;
         } else {
           revealRef.current.style.opacity = '0';
-          // Idle check: if completely faded out and not touching, stop animation loop to conserve battery/CPU
+          // Idle sleep: if completely faded out and not touching/hovering, stop rAF loop to save CPU & battery
           if (!isInsideRef.current) {
             isRunning = false;
             return;
@@ -162,7 +160,7 @@ export default function SkeletonRevealPanel() {
       animationFrameId = requestAnimationFrame(renderLoop);
     };
 
-    // IntersectionObserver pauses the loop when off-screen
+    // IntersectionObserver pauses the animation loop when off-screen
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
@@ -180,6 +178,8 @@ export default function SkeletonRevealPanel() {
     if (containerEl) {
       observer.observe(containerEl);
     }
+
+    wakeLoop();
 
     return () => {
       if (animationFrameId) {
@@ -204,7 +204,8 @@ export default function SkeletonRevealPanel() {
     <div
       ref={containerRef}
       id="skeleton-reveal-container"
-      className="absolute inset-0 w-full h-full overflow-hidden bg-transparent select-none cursor-default touch-pan-y"
+      className="absolute inset-0 w-full h-full overflow-hidden bg-transparent select-none cursor-default"
+      style={{ touchAction: 'none' }}
     >
       {/* Layer 1: Base layer — DECORATED SKELETON (Always 100% visible, centered, rock solid) */}
       <div

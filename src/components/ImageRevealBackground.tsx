@@ -30,20 +30,8 @@ export default function ImageRevealBackground() {
     };
     updateCellSize();
 
-    // Create offscreen canvas for rendering the soft radial spotlight mask
-    const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
-    const scale = 0.5 * dpr;
-    const offscreenCanvas = document.createElement('canvas');
-    const ctx = offscreenCanvas.getContext('2d');
-
-    const resizeCanvas = () => {
-      const w = containerRef.current?.offsetWidth || window.innerWidth;
-      const h = containerRef.current?.offsetHeight || window.innerHeight;
-      offscreenCanvas.width = Math.max(200, Math.round(w * scale));
-      offscreenCanvas.height = Math.max(200, Math.round(h * scale));
-      updateCellSize();
-    };
-    resizeCanvas();
+    // Window resize handler
+    window.addEventListener('resize', updateCellSize);
 
     const updatePointerPos = (clientX: number, clientY: number) => {
       if (!containerRef.current) return;
@@ -127,11 +115,13 @@ export default function ImageRevealBackground() {
     window.addEventListener('touchend', handleTouchEnd, { passive: true });
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeaveWindow);
-    window.addEventListener('resize', resizeCanvas);
 
     let animationFrameId: number;
+    let isIntersecting = true;
 
     const renderLoop = () => {
+      if (!isIntersecting) return;
+
       // Smoothly interpolate hover opacity (fades in on enter, fades out naturally on leave)
       const targetHover = isInsideRef.current ? 1 : 0;
       hoverOpacityRef.current += (targetHover - hoverOpacityRef.current) * 0.12;
@@ -149,36 +139,17 @@ export default function ImageRevealBackground() {
         Math.min(380, Math.max(130, winW * (isMobile ? 0.32 : 0.16)))
       );
 
-      if (ctx && revealRef.current) {
+      if (revealRef.current) {
         if (hoverOpacityRef.current > 0.005) {
           revealRef.current.style.opacity = hoverOpacityRef.current.toFixed(3);
 
-          const cx = smoothRef.current.x * scale;
-          const cy = smoothRef.current.y * scale;
-          const r = radius * scale;
+          const cx = Math.round(smoothRef.current.x);
+          const cy = Math.round(smoothRef.current.y);
 
-          ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-
-          // Soft radial gradient circle on offscreen canvas at smoothed cursor
-          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-          grad.addColorStop(0, 'rgba(255,255,255,1)');
-          grad.addColorStop(0.35, 'rgba(255,255,255,1)');
-          grad.addColorStop(0.65, 'rgba(255,255,255,0.75)');
-          grad.addColorStop(0.80, 'rgba(255,255,255,0.35)');
-          grad.addColorStop(0.92, 'rgba(255,255,255,0.10)');
-          grad.addColorStop(1, 'rgba(255,255,255,0)');
-
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-
-          const dataUrl = offscreenCanvas.toDataURL('image/png');
-
-          revealRef.current.style.maskImage = `url(${dataUrl})`;
-          revealRef.current.style.webkitMaskImage = `url(${dataUrl})`;
-          revealRef.current.style.maskSize = '100% 100%';
-          revealRef.current.style.webkitMaskSize = '100% 100%';
-          revealRef.current.style.maskRepeat = 'no-repeat';
-          revealRef.current.style.webkitMaskRepeat = 'no-repeat';
+          // Hardware-accelerated GPU radial-gradient mask (exact same stops as baseline canvas)
+          const mask = `radial-gradient(circle ${radius}px at ${cx}px ${cy}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,0.75) 65%, rgba(0,0,0,0.35) 80%, rgba(0,0,0,0.10) 92%, transparent 100%)`;
+          revealRef.current.style.maskImage = mask;
+          revealRef.current.style.webkitMaskImage = mask;
         } else {
           revealRef.current.style.opacity = '0';
         }
@@ -202,10 +173,30 @@ export default function ImageRevealBackground() {
       animationFrameId = requestAnimationFrame(renderLoop);
     };
 
+    // IntersectionObserver: Pause rAF loop when scrolled down past Hero section
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        isIntersecting = entry.isIntersecting;
+        if (isIntersecting) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = requestAnimationFrame(renderLoop);
+        } else {
+          cancelAnimationFrame(animationFrameId);
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
     animationFrameId = requestAnimationFrame(renderLoop);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('pointerdown', handlePointerDown);
       window.removeEventListener('pointermove', handlePointerMove);
@@ -214,7 +205,7 @@ export default function ImageRevealBackground() {
       window.removeEventListener('touchend', handleTouchEnd);
       window.removeEventListener('touchcancel', handleTouchEnd);
       document.removeEventListener('mouseleave', handleMouseLeaveWindow);
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('resize', updateCellSize);
     };
   }, []);
 

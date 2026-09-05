@@ -38,17 +38,9 @@ import { ScrollPhoneHeading, ScrollLineReveal } from './MotionTypography.tsx';
 
 // Typewriter hook for character-by-character animated display
 function useTypewriter(text: string, delay: number = 0, speed: number = 24) {
-  const [displayedText, setDisplayedText] = useState(() => {
-    // On touch/mobile devices, display text immediately to prevent blank headlines and continuous re-renders
-    if (typeof window !== 'undefined' && (window.innerWidth < 1024 || 'ontouchstart' in window)) {
-      return text;
-    }
-    return '';
-  });
+  const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {
-    if (displayedText === text) return;
-
     let timeoutId: NodeJS.Timeout;
     let intervalId: NodeJS.Timeout;
 
@@ -67,7 +59,7 @@ function useTypewriter(text: string, delay: number = 0, speed: number = 24) {
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
-  }, [text, delay, speed, displayedText]);
+  }, [text, delay, speed]);
 
   return displayedText;
 }
@@ -2035,8 +2027,6 @@ function IPhoneFrame({
       style={{
         width: 375 * scale,
         height: 812 * scale,
-        WebkitBackfaceVisibility: 'hidden',
-        backfaceVisibility: 'hidden',
       }}
     >
       <div
@@ -2049,10 +2039,7 @@ function IPhoneFrame({
           borderColor: '#2a2a2a',
           boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
           backgroundColor: '#000000',
-          transform: `scale(${scale}) translateZ(0)`,
-          WebkitTransform: `scale(${scale}) translateZ(0)`,
-          WebkitBackfaceVisibility: 'hidden',
-          backfaceVisibility: 'hidden',
+          transform: `scale(${scale})`,
           transformOrigin: 'top left',
           position: 'absolute',
           top: 0,
@@ -2131,7 +2118,6 @@ export default function ThreePhoneShowcase() {
   });
 
   // Staggered Multi-Directional Entrance Trajectories:
-  // Desktop: Rich physics spring entrance with rotation & scale
   // PHONE 1: Enters from LEFT side (progress [0.0, 0.72])
   const phone1X = useTransform(smoothProgress, [0.0, 0.72], [shouldReduceMotion ? 0 : -140, 0]);
   const phone1Y = useTransform(smoothProgress, [0.0, 0.72], [shouldReduceMotion ? 0 : 26, 0]);
@@ -2151,18 +2137,6 @@ export default function ThreePhoneShowcase() {
   const phone3Scale = useTransform(smoothProgress, [0.24, 1.0], [shouldReduceMotion ? 1 : 0.92, 1]);
   const phone3Opacity = useTransform(smoothProgress, [0.24, 1.0], [shouldReduceMotion ? 1 : 0.75, 1]);
 
-  // Mobile/Tablet-optimized entrance: clean GPU translation without nested rotation tile fragmentation
-  const phone1XMobile = useTransform(scrollYProgress, [0.0, 0.72], [shouldReduceMotion ? 0 : -120, 0]);
-  const phone1YMobile = useTransform(scrollYProgress, [0.0, 0.72], [shouldReduceMotion ? 0 : 16, 0]);
-  const phone1OpacityMobile = useTransform(scrollYProgress, [0.0, 0.72], [shouldReduceMotion ? 1 : 0.75, 1]);
-
-  const phone2YMobile = useTransform(scrollYProgress, [0.12, 0.86], [shouldReduceMotion ? 0 : -80, 0]);
-  const phone2OpacityMobile = useTransform(scrollYProgress, [0.12, 0.86], [shouldReduceMotion ? 1 : 0.78, 1]);
-
-  const phone3XMobile = useTransform(scrollYProgress, [0.24, 1.0], [shouldReduceMotion ? 0 : 120, 0]);
-  const phone3YMobile = useTransform(scrollYProgress, [0.24, 1.0], [shouldReduceMotion ? 0 : 16, 0]);
-  const phone3OpacityMobile = useTransform(scrollYProgress, [0.24, 1.0], [shouldReduceMotion ? 1 : 0.75, 1]);
-
   const [groupScale, setGroupScale] = React.useState(() => {
     if (typeof window !== 'undefined') {
       const availableWidth = window.innerWidth;
@@ -2173,8 +2147,6 @@ export default function ThreePhoneShowcase() {
     }
     return 1;
   });
-
-  const isMobile = groupScale < 0.95;
 
   React.useEffect(() => {
     const handleResize = () => {
@@ -2232,8 +2204,7 @@ export default function ThreePhoneShowcase() {
             style={{
               width: BASE_GROUP_W,
               height: BASE_GROUP_H,
-              transform: `scale(${groupScale}) translateZ(0)`,
-              WebkitTransform: `scale(${groupScale}) translateZ(0)`,
+              transform: `scale(${groupScale})`,
               transformOrigin: 'top left',
               position: 'absolute',
               top: 0,
@@ -2247,16 +2218,12 @@ export default function ThreePhoneShowcase() {
                 width: 375,
                 height: 812,
                 flexShrink: 0,
-                x: isMobile ? phone1XMobile : phone1X,
-                y: isMobile ? phone1YMobile : phone1Y,
-                rotate: isMobile ? 0 : phone1Rotate,
-                scale: isMobile ? 1 : phone1Scale,
-                opacity: isMobile ? phone1OpacityMobile : phone1Opacity,
+                x: phone1X,
+                y: phone1Y,
+                rotate: phone1Rotate,
+                scale: phone1Scale,
+                opacity: phone1Opacity,
                 transformOrigin: 'center center',
-                WebkitBackfaceVisibility: 'hidden',
-                backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
-                contain: 'layout paint',
                 willChange: 'transform, opacity',
               }}
             >
@@ -2274,14 +2241,10 @@ export default function ThreePhoneShowcase() {
                 width: 375,
                 height: 812,
                 flexShrink: 0,
-                y: isMobile ? phone2YMobile : phone2Y,
-                scale: isMobile ? 1 : phone2Scale,
-                opacity: isMobile ? phone2OpacityMobile : phone2Opacity,
+                y: phone2Y,
+                scale: phone2Scale,
+                opacity: phone2Opacity,
                 transformOrigin: 'center center',
-                WebkitBackfaceVisibility: 'hidden',
-                backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
-                contain: 'layout paint',
                 willChange: 'transform, opacity',
               }}
             >
@@ -2299,16 +2262,12 @@ export default function ThreePhoneShowcase() {
                 width: 375,
                 height: 812,
                 flexShrink: 0,
-                x: isMobile ? phone3XMobile : phone3X,
-                y: isMobile ? phone3YMobile : phone3Y,
-                rotate: isMobile ? 0 : phone3Rotate,
-                scale: isMobile ? 1 : phone3Scale,
-                opacity: isMobile ? phone3OpacityMobile : phone3Opacity,
+                x: phone3X,
+                y: phone3Y,
+                rotate: phone3Rotate,
+                scale: phone3Scale,
+                opacity: phone3Opacity,
                 transformOrigin: 'center center',
-                WebkitBackfaceVisibility: 'hidden',
-                backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
-                contain: 'layout paint',
                 willChange: 'transform, opacity',
               }}
             >
