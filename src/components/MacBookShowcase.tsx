@@ -61,6 +61,34 @@ export default function MacBookShowcase({
   const macbookRotate = useTransform(smoothProgress, [0, 1], [shouldReduceMotion ? 0 : -2.2, 0]);
   const macbookOpacity = useTransform(smoothProgress, [0, 1], [shouldReduceMotion ? 1 : 0.80, 1]);
 
+  // Mobile/Tablet-optimized entrance: clean GPU translation without nested rotation tile thrashing
+  const macbookYMobile = useTransform(scrollYProgress, [0, 1], [shouldReduceMotion ? 0 : 44, 0]);
+  const macbookOpacityMobile = useTransform(scrollYProgress, [0, 1], [shouldReduceMotion ? 1 : 0.85, 1]);
+
+  const isMobile = scale < 0.98;
+
+  // On mobile, defer loading the heavy DentalApp until the section is within 450px of viewport
+  const [shouldRenderApp, setShouldRenderApp] = useState(() => {
+    return typeof window !== 'undefined' && window.innerWidth >= 1024;
+  });
+
+  useEffect(() => {
+    if (shouldRenderApp) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldRenderApp(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '450px' }
+    );
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+    return () => observer.disconnect();
+  }, [shouldRenderApp]);
+
   // Responsive scaling to fit narrower viewports while maintaining exact MacBook proportions
   useEffect(() => {
     const handleResize = () => {
@@ -232,33 +260,37 @@ export default function MacBookShowcase({
           }}
           className="relative overflow-visible shrink-0"
         >
-          {/* Unscaled Inner Wrapper with CSS scale transform anchored to top-left */}
-          <div
-            style={{
-              width: 1040,
-              height: 690,
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-            }}
-            className="flex flex-col items-center select-auto"
-          >
-            <motion.div
+            {/* Unscaled Inner Wrapper with CSS scale transform anchored to top-left */}
+            <div
               style={{
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                y: macbookY,
-                scale: macbookScale,
-                rotate: macbookRotate,
-                opacity: macbookOpacity,
-                transformOrigin: 'center bottom',
-                willChange: 'transform, opacity',
+                width: 1040,
+                height: 690,
+                transform: `scale(${scale}) translateZ(0)`,
+                WebkitTransform: `scale(${scale}) translateZ(0)`,
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
               }}
+              className="flex flex-col items-center select-auto"
             >
+              <motion.div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  y: isMobile ? macbookYMobile : macbookY,
+                  scale: isMobile ? 1 : macbookScale,
+                  rotate: isMobile ? 0 : macbookRotate,
+                  opacity: isMobile ? macbookOpacityMobile : macbookOpacity,
+                  transformOrigin: 'center bottom',
+                  WebkitBackfaceVisibility: 'hidden',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)',
+                  willChange: 'transform, opacity',
+                }}
+              >
               {/* ============================================================= */}
               {/* 1. TOP DISPLAY LID / SCREEN ASSEMBLY (16:10 REALISTIC CHASSIS) */}
               {/* ============================================================= */}
@@ -454,7 +486,13 @@ export default function MacBookShowcase({
 
                   {/* WEBPAGE VIEWPORT CONTAINER (STRICT 100% INTERNAL BOUNDARY) */}
                   <div className="relative w-full flex-1 min-h-0 overflow-hidden bg-white text-black">
-                    <DentalApp key={resetKey} />
+                    {shouldRenderApp ? (
+                      <DentalApp key={resetKey} />
+                    ) : (
+                      <div className="w-full h-full bg-white flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full border-2 border-teal-500 border-t-transparent animate-spin opacity-40" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

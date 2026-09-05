@@ -791,6 +791,8 @@ function Section3ImplantDentistry({
                 src={SECTION3_IMG1}
                 alt="Dental implant procedure"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <div className="flex-1 rounded-xl md:rounded-2xl overflow-hidden border border-stone-200/50 shadow-2xs">
@@ -798,6 +800,8 @@ function Section3ImplantDentistry({
                 src={SECTION3_IMG2}
                 alt="Dental restoration"
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           </div>
@@ -838,6 +842,8 @@ function Section3ImplantDentistry({
             src={SECTION3_BG}
             alt="Smiling patient"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
 
           {/* Overlay container */}

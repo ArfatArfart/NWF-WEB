@@ -15,23 +15,9 @@ export default function SkeletonRevealPanel() {
   const hasInitializedMouse = useRef(false);
 
   useEffect(() => {
-    // Detect fine pointer capability (mouse, trackpad, stylus on desktop or tablet/iPad)
-    const hasFinePointer =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(pointer: fine)').matches;
-
-    const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
-    const scale = 0.5 * dpr;
-    const offscreenCanvas = document.createElement('canvas');
-    const ctx = offscreenCanvas.getContext('2d');
-
-    const resizeCanvas = () => {
-      const w = containerRef.current?.offsetWidth || 800;
-      const h = containerRef.current?.offsetHeight || 600;
-      offscreenCanvas.width = Math.max(100, Math.round(w * scale));
-      offscreenCanvas.height = Math.max(100, Math.round(h * scale));
-    };
-    resizeCanvas();
+    let animationFrameId: number | null = null;
+    let isIntersecting = false;
+    let isRunning = false;
 
     const updatePointerPos = (clientX: number, clientY: number) => {
       if (!containerRef.current) return;
@@ -49,122 +35,168 @@ export default function SkeletonRevealPanel() {
       }
     };
 
+    const wakeLoop = () => {
+      if (!isRunning && isIntersecting) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    };
+
+    // Pointer events (Desktop mouse, trackpad, pen/stylus)
+    const handlePointerDown = (e: PointerEvent) => {
+      isInsideRef.current = true;
+      setIsHovered(true);
+      updatePointerPos(e.clientX, e.clientY);
+      wakeLoop();
+    };
+
     const handlePointerEnter = (e: PointerEvent) => {
-      if (e.pointerType === 'mouse' || e.pointerType === 'pen' || hasFinePointer) {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
         isInsideRef.current = true;
         setIsHovered(true);
         updatePointerPos(e.clientX, e.clientY);
+        wakeLoop();
       }
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      if (e.pointerType === 'mouse' || e.pointerType === 'pen' || hasFinePointer) {
+      if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
         if (!isInsideRef.current) {
           isInsideRef.current = true;
           setIsHovered(true);
         }
         updatePointerPos(e.clientX, e.clientY);
+        wakeLoop();
       }
     };
 
     const handlePointerLeave = () => {
       isInsideRef.current = false;
       setIsHovered(false);
+      wakeLoop();
     };
 
+    // Touch events (Mobile phones and touch tablets)
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches && e.touches.length > 0) {
+        isInsideRef.current = true;
+        setIsHovered(true);
         updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+        wakeLoop();
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches && e.touches.length > 0) {
+        if (!isInsideRef.current) {
+          isInsideRef.current = true;
+          setIsHovered(true);
+        }
+        updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+        wakeLoop();
       }
     };
 
     const handleTouchEnd = () => {
       isInsideRef.current = false;
       setIsHovered(false);
+      wakeLoop();
     };
 
     const containerEl = containerRef.current;
     if (containerEl) {
+      containerEl.addEventListener('pointerdown', handlePointerDown, { passive: true });
       containerEl.addEventListener('pointerenter', handlePointerEnter);
       containerEl.addEventListener('pointermove', handlePointerMove, { passive: true });
       containerEl.addEventListener('pointerleave', handlePointerLeave);
       containerEl.addEventListener('pointercancel', handlePointerLeave);
       containerEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+      containerEl.addEventListener('touchmove', handleTouchMove, { passive: true });
       containerEl.addEventListener('touchend', handleTouchEnd, { passive: true });
       containerEl.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     }
-    window.addEventListener('resize', resizeCanvas);
-
-    let animationFrameId: number;
 
     const renderLoop = () => {
-      // Smoothly interpolate hover opacity (fades in on enter, fades out naturally on leave)
+      if (!isIntersecting) {
+        isRunning = false;
+        return;
+      }
+
+      // Smoothly interpolate hover opacity (fades in on enter/touch, fades out naturally on leave)
       const targetHover = isInsideRef.current ? 1 : 0;
       hoverOpacityRef.current += (targetHover - hoverOpacityRef.current) * 0.12;
 
-      // Ease smoothRef toward mouse with factor 0.1 (exact same as Main Hero)
-      smoothRef.current.x += (mouseRef.current.x - smoothRef.current.x) * 0.1;
-      smoothRef.current.y += (mouseRef.current.y - smoothRef.current.y) * 0.1;
+      // Ease smoothRef toward mouse/touch position
+      smoothRef.current.x += (mouseRef.current.x - smoothRef.current.x) * 0.14;
+      smoothRef.current.y += (mouseRef.current.y - smoothRef.current.y) * 0.14;
 
       const winW = containerRef.current?.offsetWidth || 800;
 
-      // Soft circular spotlight radius (responsive to container width)
+      // Soft circular spotlight radius (responsive to container width and touch screen)
+      const isSmall = winW < 640;
       const radius = Math.round(
-        Math.min(240, Math.max(90, winW * 0.20))
+        Math.min(240, Math.max(90, winW * (isSmall ? 0.28 : 0.20)))
       );
 
-      if (ctx && revealRef.current) {
+      if (revealRef.current) {
         if (hoverOpacityRef.current > 0.005) {
           revealRef.current.style.opacity = hoverOpacityRef.current.toFixed(3);
 
-          const cx = smoothRef.current.x * scale;
-          const cy = smoothRef.current.y * scale;
-          const r = radius * scale;
+          const cx = Math.round(smoothRef.current.x);
+          const cy = Math.round(smoothRef.current.y);
 
-          ctx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-
-          // Soft radial gradient circle on offscreen canvas at smoothed cursor (exact Hero gradient stops)
-          const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-          grad.addColorStop(0, 'rgba(255,255,255,1)');
-          grad.addColorStop(0.4, 'rgba(255,255,255,1)');
-          grad.addColorStop(0.6, 'rgba(255,255,255,0.75)');
-          grad.addColorStop(0.78, 'rgba(255,255,255,0.35)');
-          grad.addColorStop(0.9, 'rgba(255,255,255,0.1)');
-          grad.addColorStop(1, 'rgba(255,255,255,0)');
-
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
-
-          const dataUrl = offscreenCanvas.toDataURL('image/png');
-
-          revealRef.current.style.maskImage = `url(${dataUrl})`;
-          revealRef.current.style.webkitMaskImage = `url(${dataUrl})`;
-          revealRef.current.style.maskSize = '100% 100%';
-          revealRef.current.style.webkitMaskSize = '100% 100%';
-          revealRef.current.style.maskRepeat = 'no-repeat';
-          revealRef.current.style.webkitMaskRepeat = 'no-repeat';
+          // Hardware-accelerated GPU radial-gradient mask (eliminates expensive canvas toDataURL on every frame)
+          const mask = `radial-gradient(circle ${radius}px at ${cx}px ${cy}px, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 40%, rgba(0,0,0,0.75) 60%, rgba(0,0,0,0.35) 78%, rgba(0,0,0,0.1) 90%, transparent 100%)`;
+          revealRef.current.style.maskImage = mask;
+          revealRef.current.style.webkitMaskImage = mask;
         } else {
           revealRef.current.style.opacity = '0';
+          // Idle check: if completely faded out and not touching, stop animation loop to conserve battery/CPU
+          if (!isInsideRef.current) {
+            isRunning = false;
+            return;
+          }
         }
       }
 
       animationFrameId = requestAnimationFrame(renderLoop);
     };
 
-    animationFrameId = requestAnimationFrame(renderLoop);
+    // IntersectionObserver pauses the loop when off-screen
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        isIntersecting = entry.isIntersecting;
+        if (isIntersecting) {
+          wakeLoop();
+        } else if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          isRunning = false;
+        }
+      },
+      { threshold: 0.05 }
+    );
+
+    if (containerEl) {
+      observer.observe(containerEl);
+    }
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      observer.disconnect();
       if (containerEl) {
+        containerEl.removeEventListener('pointerdown', handlePointerDown);
         containerEl.removeEventListener('pointerenter', handlePointerEnter);
         containerEl.removeEventListener('pointermove', handlePointerMove);
         containerEl.removeEventListener('pointerleave', handlePointerLeave);
         containerEl.removeEventListener('pointercancel', handlePointerLeave);
         containerEl.removeEventListener('touchstart', handleTouchStart);
+        containerEl.removeEventListener('touchmove', handleTouchMove);
         containerEl.removeEventListener('touchend', handleTouchEnd);
         containerEl.removeEventListener('touchcancel', handleTouchEnd);
       }
-      window.removeEventListener('resize', resizeCanvas);
     };
   }, []);
 
