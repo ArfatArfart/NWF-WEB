@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 // New Hero character assets: Queen (Decorated) and Queen Plain (Simple)
-export const BG_IMAGE_1 = '/assets/hero-queen.png';
-export const BG_IMAGE_2 = '/assets/hero-queen-plain.png';
+export const BG_IMAGE_1 = `${import.meta.env.BASE_URL}assets/hero-queen.png`;
+export const BG_IMAGE_2 = `${import.meta.env.BASE_URL}assets/hero-queen-plain.png`;
 
 export default function ImageRevealBackground() {
   const containerRef = useRef<HTMLDivElement>(null);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const SKELETON_IMAGE_DECORATED = '/assets/skeleton1.png.png';
-export const SKELETON_IMAGE_PLAIN = '/assets/skeleton2.png.png';
+export const SKELETON_IMAGE_DECORATED = `${import.meta.env.BASE_URL}assets/skeleton1.png.png`;
+export const SKELETON_IMAGE_PLAIN = `${import.meta.env.BASE_URL}assets/skeleton2.png.png`;
 
 export default function SkeletonRevealPanel() {
   const containerRef = useRef<HTMLDivElement>(null);
