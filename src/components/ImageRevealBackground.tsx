@@ -34,6 +34,15 @@ export default function ImageRevealBackground() {
     window.addEventListener('resize', updateCellSize);
 
     let isIntersecting = true;
+    let animationFrameId: number = 0;
+    let isRunning = false;
+
+    const wakeLoop = () => {
+      if (!isRunning && isIntersecting) {
+        isRunning = true;
+        animationFrameId = requestAnimationFrame(renderLoop);
+      }
+    };
 
     const updatePointerPos = (clientX: number, clientY: number) => {
       if (!isIntersecting || !containerRef.current) return;
@@ -63,20 +72,24 @@ export default function ImageRevealBackground() {
 
     const handleMouseMove = (e: MouseEvent) => {
       updatePointerPos(e.clientX, e.clientY);
+      wakeLoop();
     };
 
     const handlePointerDown = (e: PointerEvent) => {
       updatePointerPos(e.clientX, e.clientY);
+      wakeLoop();
     };
 
     const handlePointerMove = (e: PointerEvent) => {
       if (e.pointerType === 'touch' || e.pointerType === 'pen') {
         updatePointerPos(e.clientX, e.clientY);
+        wakeLoop();
       }
     };
 
     const handleMouseLeaveWindow = () => {
       isInsideRef.current = false;
+      wakeLoop();
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -96,17 +109,20 @@ export default function ImageRevealBackground() {
             isInsideRef.current = true;
           }
         }
+        wakeLoop();
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches && e.touches.length > 0) {
         updatePointerPos(e.touches[0].clientX, e.touches[0].clientY);
+        wakeLoop();
       }
     };
 
     const handleTouchEnd = () => {
       isInsideRef.current = false;
+      wakeLoop();
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -118,10 +134,11 @@ export default function ImageRevealBackground() {
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeaveWindow);
 
-    let animationFrameId: number;
-
     const renderLoop = () => {
-      if (!isIntersecting) return;
+      if (!isIntersecting) {
+        isRunning = false;
+        return;
+      }
 
       // Smoothly interpolate hover opacity (fades in on enter, fades out naturally on leave)
       const targetHover = isInsideRef.current ? 1 : 0;
@@ -163,12 +180,21 @@ export default function ImageRevealBackground() {
       const targetOffsetX = normX * 16;
       const targetOffsetY = normY * 16;
 
-      gridOffsetRef.current.x += (targetOffsetX - gridOffsetRef.current.x) * 0.06;
-      gridOffsetRef.current.y += (targetOffsetY - gridOffsetRef.current.y) * 0.06;
+      const diffX = targetOffsetX - gridOffsetRef.current.x;
+      const diffY = targetOffsetY - gridOffsetRef.current.y;
+
+      gridOffsetRef.current.x += diffX * 0.06;
+      gridOffsetRef.current.y += diffY * 0.06;
 
       if (patternRef.current) {
         patternRef.current.setAttribute('x', gridOffsetRef.current.x.toFixed(2));
         patternRef.current.setAttribute('y', gridOffsetRef.current.y.toFixed(2));
+      }
+
+      // Idle sleep: when pointer is outside, opacity has faded to 0, and parallax has settled
+      if (!isInsideRef.current && hoverOpacityRef.current <= 0.005 && Math.abs(diffX) < 0.01 && Math.abs(diffY) < 0.01) {
+        isRunning = false;
+        return;
       }
 
       animationFrameId = requestAnimationFrame(renderLoop);
@@ -180,10 +206,10 @@ export default function ImageRevealBackground() {
         const [entry] = entries;
         isIntersecting = entry.isIntersecting;
         if (isIntersecting) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = requestAnimationFrame(renderLoop);
+          wakeLoop();
         } else {
-          cancelAnimationFrame(animationFrameId);
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          isRunning = false;
           isInsideRef.current = false;
         }
       },
@@ -194,7 +220,7 @@ export default function ImageRevealBackground() {
       observer.observe(containerRef.current);
     }
 
-    animationFrameId = requestAnimationFrame(renderLoop);
+    wakeLoop();
 
     return () => {
       cancelAnimationFrame(animationFrameId);

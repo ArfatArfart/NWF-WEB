@@ -120,11 +120,18 @@ export default function App() {
         }}
       />
 
-      {/* 3. EXISTING THREE-PHONE SHOWCASE SECTION (Mobile app showcase displaying 3 iPhone mockups) */}
-      <ThreePhoneShowcase />
+      {/* Seamless Studio Showcase Wrapper (encloses ThreePhoneShowcase and MacBookShowcase with matching dark studio tone to permanently prevent any subpixel white exposure) */}
+      <div
+        id="studio-showcase-wrapper"
+        className="w-full relative"
+        style={{ backgroundColor: '#5A4C41' }}
+      >
+        {/* 3. EXISTING THREE-PHONE SHOWCASE SECTION (Mobile app showcase displaying 3 iPhone mockups) */}
+        <ThreePhoneShowcase />
 
-      {/* 4. EXISTING MACBOOK SHOWCASE SECTION (Displays the complete Dental Healthcare website inside a realistic MacBook) */}
-      <MacBookShowcase />
+        {/* 4. EXISTING MACBOOK SHOWCASE SECTION (Displays the complete Dental Healthcare website inside a realistic MacBook) */}
+        <MacBookShowcase />
+      </div>
 
       {/* 5. ABOUT US SECTION (Introducing Arfat with authentic, concise focus points) */}
       <AboutSection />

@@ -2108,8 +2108,7 @@ function IPhoneFrame({
           borderColor: '#2a2a2a',
           boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
           backgroundColor: '#000000',
-          transform: `scale(${scale}) translateZ(0)`,
-          transformOrigin: 'top left',
+          ...(scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: 'top left' } : {}),
           WebkitBackfaceVisibility: 'hidden',
           backfaceVisibility: 'hidden',
           position: 'absolute',
@@ -2117,14 +2116,14 @@ function IPhoneFrame({
           left: 0,
         }}
       >
-        {/* Screen artboard (375x812 rounded inner frame) - Isolated Stacking Context */}
+        {/* Screen artboard (375x812 rounded inner frame) - Unified Texture Stacking Context */}
         <div
           className="w-full h-full rounded-[48px] overflow-hidden relative z-10"
           style={{
+            backgroundColor: '#000000',
             isolation: 'isolate',
             WebkitBackfaceVisibility: 'hidden',
             backfaceVisibility: 'hidden',
-            transform: 'translateZ(0)',
           }}
         >
           {children}
@@ -2189,10 +2188,10 @@ export default function ThreePhoneShowcase() {
   const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1024;
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: isMobileViewport ? 140 : 90,
-    damping: isMobileViewport ? 26 : 24,
-    mass: isMobileViewport ? 0.1 : 0.2,
-    restDelta: 0.001,
+    stiffness: isMobileViewport ? 180 : 90,
+    damping: isMobileViewport ? 30 : 24,
+    mass: isMobileViewport ? 0.08 : 0.2,
+    restDelta: isMobileViewport ? 0.003 : 0.001,
   });
 
   // Intelligent preloading of phone assets when approaching viewport
@@ -2271,7 +2270,7 @@ export default function ThreePhoneShowcase() {
       ref={sectionRef}
       id="work"
       className="relative z-20 w-full overflow-hidden"
-      style={{ backgroundColor: '#5A4C41' }}
+      style={{ backgroundColor: '#5A4C41', marginBottom: '-1px' }}
     >
       {/* Header bar / Title for showcase */}
       <ScrollPhoneHeading
@@ -2293,8 +2292,8 @@ export default function ThreePhoneShowcase() {
         {/* Layout-space wrapper — occupies exactly the scaled dimensions */}
         <div
           style={{
-            width: BASE_GROUP_W * groupScale,
-            height: BASE_GROUP_H * groupScale,
+            width: Math.round(BASE_GROUP_W * groupScale),
+            height: Math.round(BASE_GROUP_H * groupScale),
           }}
           className="relative overflow-visible shrink-0"
         >
@@ -2328,7 +2327,6 @@ export default function ThreePhoneShowcase() {
                 willChange: 'transform, opacity',
                 WebkitBackfaceVisibility: 'hidden',
                 backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>
@@ -2352,7 +2350,6 @@ export default function ThreePhoneShowcase() {
                 willChange: 'transform, opacity',
                 WebkitBackfaceVisibility: 'hidden',
                 backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>
@@ -2378,7 +2375,6 @@ export default function ThreePhoneShowcase() {
                 willChange: 'transform, opacity',
                 WebkitBackfaceVisibility: 'hidden',
                 backfaceVisibility: 'hidden',
-                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>

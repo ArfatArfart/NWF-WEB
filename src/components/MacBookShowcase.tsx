@@ -73,10 +73,10 @@ export default function MacBookShowcase({
   }, []);
 
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: isMobileViewport ? 140 : 90,
-    damping: isMobileViewport ? 26 : 24,
-    mass: isMobileViewport ? 0.1 : 0.2,
-    restDelta: 0.001,
+    stiffness: isMobileViewport ? 180 : 90,
+    damping: isMobileViewport ? 30 : 24,
+    mass: isMobileViewport ? 0.08 : 0.2,
+    restDelta: isMobileViewport ? 0.003 : 0.001,
   });
 
   // Physical Placement Motion:
@@ -253,8 +253,8 @@ export default function MacBookShowcase({
       >
         <div
           style={{
-            width: 1040 * scale,
-            height: 690 * scale,
+            width: Math.round(1040 * scale),
+            height: Math.round(690 * scale),
           }}
           className="relative overflow-visible shrink-0"
         >
@@ -587,8 +587,6 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 60%, transparent 80%)',
                   filter: 'blur(4px)',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
                 }}
               />
               {/* 2. Mid-range ambient occlusion shadow */}
@@ -598,8 +596,6 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 55%, transparent 75%)',
                   filter: 'blur(14px)',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
                 }}
               />
               {/* 3. Expansive diffused soft floor shadow */}
@@ -609,8 +605,6 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 85%)',
                   filter: 'blur(28px)',
-                  transform: 'translateZ(0)',
-                  willChange: 'transform',
                 }}
               />
             </div>
