@@ -18,6 +18,26 @@ const SECTION3_IMG2 =
 const SECTION3_BG =
   'https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260624_114355_752ba9e6-0942-4abb-9047-5d9bb16632e9.png&w=1280&q=85';
 
+export const DENTAL_PRELOAD_URLS = [
+  HERO_IMAGE,
+  SECTION2_IMAGE,
+  SECTION3_IMG1,
+  SECTION3_IMG2,
+  SECTION3_BG,
+];
+
+export function preloadDentalAssets() {
+  if (typeof window === 'undefined') return;
+  DENTAL_PRELOAD_URLS.forEach((url) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    if (img.decode) {
+      img.decode().catch(() => {});
+    }
+  });
+}
+
 // ============================================================================
 // DATA CONSTANTS
 // ============================================================================
@@ -83,7 +103,21 @@ function useMaskPositions(
           sh,
         };
       });
-      setPositions(newPositions);
+      setPositions((prev) => {
+        if (
+          prev.length === newPositions.length &&
+          prev.every(
+            (p, i) =>
+              Math.abs(p.x - newPositions[i].x) < 0.5 &&
+              Math.abs(p.y - newPositions[i].y) < 0.5 &&
+              p.sw === newPositions[i].sw &&
+              p.sh === newPositions[i].sh
+          )
+        ) {
+          return prev;
+        }
+        return newPositions;
+      });
     };
 
     update();
@@ -100,23 +134,37 @@ function useMaskPositions(
   return positions;
 }
 
+const naturalRatioCache = new Map<string, number>();
+
 /**
  * useImageWidth
- * Loads the image in a new Image() object.
+ * Loads the image in a new Image() object with module aspect-ratio cache.
  * Calculates: renderWidth = img.naturalWidth * (sectionHeight / img.naturalHeight).
  * Returns how wide the image would be if scaled to fill the section height.
  */
 function useImageWidth(imageUrl: string, sectionHeight: number) {
-  const [renderWidth, setRenderWidth] = useState<number>(0);
+  const [renderWidth, setRenderWidth] = useState<number>(() => {
+    const cachedRatio = naturalRatioCache.get(imageUrl);
+    return cachedRatio && sectionHeight > 0 ? cachedRatio * sectionHeight : 0;
+  });
 
   useEffect(() => {
     if (!imageUrl) return;
+
+    const cachedRatio = naturalRatioCache.get(imageUrl);
+    if (cachedRatio && sectionHeight > 0) {
+      setRenderWidth(cachedRatio * sectionHeight);
+    }
+
     const img = new Image();
+    img.decoding = 'async';
     img.src = imageUrl;
 
     const calculate = () => {
       if (img.naturalHeight > 0 && sectionHeight > 0) {
-        setRenderWidth(img.naturalWidth * (sectionHeight / img.naturalHeight));
+        const ratio = img.naturalWidth / img.naturalHeight;
+        naturalRatioCache.set(imageUrl, ratio);
+        setRenderWidth(ratio * sectionHeight);
       }
     };
 
@@ -241,17 +289,17 @@ function MaskedCard({
   const maskedStyle: React.CSSProperties =
     position && sh > 0
       ? {
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: `auto ${sh}px`,
-          backgroundPosition: `-${x + focalOffset}px -${y}px`,
-          backgroundRepeat: 'no-repeat',
-        }
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: `auto ${sh}px`,
+        backgroundPosition: `-${x + focalOffset}px -${y}px`,
+        backgroundRepeat: 'no-repeat',
+      }
       : {
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: `${focalX * 100}% center`,
-          backgroundRepeat: 'no-repeat',
-        };
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: `${focalX * 100}% center`,
+        backgroundRepeat: 'no-repeat',
+      };
 
   return (
     <div
@@ -276,34 +324,62 @@ function MaskedCard({
 // After reaching 100: wait 200ms, then set exiting=true which triggers opacity-0 with transition-opacity duration-700.
 // After 900ms total from reaching 100, call onComplete() which removes splash from DOM.
 // ============================================================================
-function SplashScreen({ onComplete }: { onComplete: () => void }) {
+function SplashScreen({
+  onComplete,
+  active = true,
+}: {
+  onComplete: () => void;
+  active?: boolean;
+}) {
   const [count, setCount] = useState(0);
   const [exiting, setExiting] = useState(false);
+  const countRef = useRef(0);
 
   useEffect(() => {
-    let current = 0;
-    const interval = setInterval(() => {
-      current += 1;
-      setCount(current);
-      if (current >= 100) {
-        clearInterval(interval);
-        setTimeout(() => {
+    if (!active) return;
+
+    let animId: number;
+    let startTime: number | null = null;
+    let exitTimeoutId: ReturnType<typeof setTimeout>;
+    let completeTimeoutId: ReturnType<typeof setTimeout>;
+    const duration = 2000;
+
+    const tick = (now: number) => {
+      if (!startTime) startTime = now;
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const nextCount = Math.floor(progress * 100);
+
+      if (nextCount !== countRef.current) {
+        countRef.current = nextCount;
+        setCount(nextCount);
+      }
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(tick);
+      } else {
+        exitTimeoutId = setTimeout(() => {
           setExiting(true);
         }, 200);
-        setTimeout(() => {
+        completeTimeoutId = setTimeout(() => {
           onComplete();
         }, 900);
       }
-    }, 20);
+    };
 
-    return () => clearInterval(interval);
-  }, [onComplete]);
+    animId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      clearTimeout(exitTimeoutId);
+      clearTimeout(completeTimeoutId);
+    };
+  }, [onComplete, active]);
 
   return (
     <div
-      className={`absolute inset-0 z-[100] bg-white flex flex-col justify-end items-start pointer-events-auto transition-opacity duration-700 ${
-        exiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className={`absolute inset-0 z-[100] bg-white flex flex-col justify-end items-start pointer-events-auto transition-opacity duration-700 ${exiting ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
     >
       <div className="text-7xl md:text-9xl font-bold tabular-nums p-6 md:p-10 leading-none text-black select-none">
         {count}
@@ -370,19 +446,16 @@ function Navbar({
         aria-label="Toggle navigation menu"
       >
         <span
-          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${
-            menuOpen ? 'rotate-45 translate-y-0' : '-translate-y-1.5'
-          }`}
+          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${menuOpen ? 'rotate-45 translate-y-0' : '-translate-y-1.5'
+            }`}
         />
         <span
-          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${
-            menuOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
-          }`}
+          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${menuOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'
+            }`}
         />
         <span
-          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${
-            menuOpen ? '-rotate-45 translate-y-0' : 'translate-y-1.5'
-          }`}
+          className={`absolute h-0.5 w-5 bg-black rounded-full transition-all duration-300 ease-[cubic-bezier(0.76,0,0.24,1)] ${menuOpen ? '-rotate-45 translate-y-0' : 'translate-y-1.5'
+            }`}
         />
       </button>
     </nav>
@@ -703,26 +776,23 @@ function Section2SmileGallery({
               <div
                 key={svc.name}
                 onClick={() => onToggleService(idx)}
-                className={`flex-1 min-w-[calc(50%-4px)] md:min-w-0 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-col justify-between cursor-pointer transition-all duration-300 ${
-                  svc.active
+                className={`flex-1 min-w-[calc(50%-4px)] md:min-w-0 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-col justify-between cursor-pointer transition-all duration-300 ${svc.active
                     ? 'bg-white/90 backdrop-blur-md shadow-xs'
                     : 'bg-white/20 backdrop-blur-xl hover:bg-white/30'
-                }`}
+                  }`}
               >
                 <h3
-                  className={`text-lg md:text-2xl font-bold leading-[1.05] whitespace-pre-line ${
-                    svc.active ? 'text-black' : 'text-white'
-                  }`}
+                  className={`text-lg md:text-2xl font-bold leading-[1.05] whitespace-pre-line ${svc.active ? 'text-black' : 'text-white'
+                    }`}
                 >
                   {svc.name}
                 </h3>
                 {svc.num && (
                   <div
-                    className={`self-end w-7 h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center text-xs font-semibold ${
-                      svc.active
+                    className={`self-end w-7 h-7 md:w-9 md:h-9 rounded-full border flex items-center justify-center text-xs font-semibold ${svc.active
                         ? 'border-black text-black'
                         : 'border-white text-white'
-                    }`}
+                      }`}
                   >
                     {svc.num}
                   </div>
@@ -790,6 +860,8 @@ function Section3ImplantDentistry({
               <img
                 src={SECTION3_IMG1}
                 alt="Dental implant procedure"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -797,6 +869,8 @@ function Section3ImplantDentistry({
               <img
                 src={SECTION3_IMG2}
                 alt="Dental restoration"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -837,6 +911,8 @@ function Section3ImplantDentistry({
           <img
             src={SECTION3_BG}
             alt="Smiling patient"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
 
@@ -1246,19 +1322,24 @@ function DentalCaringModal({ onClose }: { onClose: () => void }) {
 // 5. Section 3
 // Strictly constrained to width: 100%, height: 100%, overflow-y: auto, overflow-x: hidden.
 // ZERO elements with position: fixed, preventing any coordinate breakout into the outer website.
-// ============================================================================
-export default function DentalApp() {
+// ============================================================
+export default function DentalApp({
+  active = true,
+}: {
+  active?: boolean;
+  key?: React.Key;
+}) {
   const [showSplash, setShowSplash] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [servicesList, setServicesList] = useState<ServiceItem[]>(services);
+  const [servicesList, setServicesList] = useState(services);
   const [activeModal, setActiveModal] = useState<
-    'emergency' | 'appointment' | 'process' | 'caring' | null
+    'appointment' | 'emergency' | 'process' | 'caring' | null
   >(null);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const isMobile = useIsMobile(scrollContainerRef);
 
-  // Scroll lock on dental app container when mobile menu is open
+  // Prevent background scrolling when mobile menu is open
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
@@ -1303,7 +1384,12 @@ export default function DentalApp() {
       }}
     >
       {/* 1. Splash Screen */}
-      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+      {showSplash && (
+        <SplashScreen
+          active={active}
+          onComplete={() => setShowSplash(false)}
+        />
+      )}
 
       {/* 2. Sticky Navbar */}
       <Navbar

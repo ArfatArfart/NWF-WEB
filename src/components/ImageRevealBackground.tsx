@@ -33,8 +33,10 @@ export default function ImageRevealBackground() {
     // Window resize handler
     window.addEventListener('resize', updateCellSize);
 
+    let isIntersecting = true;
+
     const updatePointerPos = (clientX: number, clientY: number) => {
-      if (!containerRef.current) return;
+      if (!isIntersecting || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const isInside = (
         clientX >= rect.left &&
@@ -117,7 +119,6 @@ export default function ImageRevealBackground() {
     document.addEventListener('mouseleave', handleMouseLeaveWindow);
 
     let animationFrameId: number;
-    let isIntersecting = true;
 
     const renderLoop = () => {
       if (!isIntersecting) return;
@@ -183,6 +184,7 @@ export default function ImageRevealBackground() {
           animationFrameId = requestAnimationFrame(renderLoop);
         } else {
           cancelAnimationFrame(animationFrameId);
+          isInsideRef.current = false;
         }
       },
       { threshold: 0.05 }

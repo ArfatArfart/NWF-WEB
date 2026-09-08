@@ -6,7 +6,7 @@ import {
   useSpring,
   useReducedMotion,
 } from 'framer-motion';
-import DentalApp from './DentalApp.tsx';
+import DentalApp, { preloadDentalAssets } from './DentalApp.tsx';
 import {
   ScrollSplitReveal,
   ScrollLineReveal,
@@ -46,10 +46,36 @@ export default function MacBookShowcase({
     offset: ['start 86%', 'center 46%'],
   });
 
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1024;
+  const [isApproaching, setIsApproaching] = useState(false);
+
+  // Viewport-aware preloading of Dental assets
+  useEffect(() => {
+    const sec = sectionRef.current;
+    if (!sec) return;
+
+    let preloaded = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsApproaching(true);
+          if (!preloaded) {
+            preloaded = true;
+            preloadDentalAssets();
+          }
+        }
+      },
+      { rootMargin: '600px 0px 600px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(sec);
+    return () => observer.disconnect();
+  }, []);
+
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 90,
-    damping: 24,
-    mass: 0.2,
+    stiffness: isMobileViewport ? 140 : 90,
+    damping: isMobileViewport ? 26 : 24,
+    mass: isMobileViewport ? 0.1 : 0.2,
     restDelta: 0.001,
   });
 
@@ -237,8 +263,10 @@ export default function MacBookShowcase({
             style={{
               width: 1040,
               height: 690,
-              transform: `scale(${scale})`,
+              transform: `scale(${scale}) translateZ(0)`,
               transformOrigin: 'top left',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
               position: 'absolute',
               top: 0,
               left: 0,
@@ -257,6 +285,9 @@ export default function MacBookShowcase({
                 opacity: macbookOpacity,
                 transformOrigin: 'center bottom',
                 willChange: 'transform, opacity',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
               }}
             >
               {/* ============================================================= */}
@@ -454,7 +485,7 @@ export default function MacBookShowcase({
 
                   {/* WEBPAGE VIEWPORT CONTAINER (STRICT 100% INTERNAL BOUNDARY) */}
                   <div className="relative w-full flex-1 min-h-0 overflow-hidden bg-white text-black">
-                    <DentalApp key={resetKey} />
+                    <DentalApp key={resetKey} active={isApproaching} />
                   </div>
                 </div>
               </div>
@@ -556,6 +587,8 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 60%, transparent 80%)',
                   filter: 'blur(4px)',
+                  transform: 'translateZ(0)',
+                  willChange: 'transform',
                 }}
               />
               {/* 2. Mid-range ambient occlusion shadow */}
@@ -565,6 +598,8 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 55%, transparent 75%)',
                   filter: 'blur(14px)',
+                  transform: 'translateZ(0)',
+                  willChange: 'transform',
                 }}
               />
               {/* 3. Expansive diffused soft floor shadow */}
@@ -574,6 +609,8 @@ export default function MacBookShowcase({
                   background:
                     'radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 85%)',
                   filter: 'blur(28px)',
+                  transform: 'translateZ(0)',
+                  willChange: 'transform',
                 }}
               />
             </div>

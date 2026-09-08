@@ -58,40 +58,40 @@ export const HERO_CHAR_CONFIGS: CharMotionConfig[] = [
   // --------------------------------------------------------------------------
   // 1. MODERN: Alternating directional slide into grid (M, O, D, E, R, N)
   // --------------------------------------------------------------------------
-  { x: -32, y: -14, rotate: -5, rotateY: 0,   scale: 0.94, opacity: 0.78, delay: 0.00, duration: 0.50 }, // 0: 'M' (from left & slightly up)
-  { x: 32,  y: 14,  rotate: 6,  rotateY: 0,   scale: 1.04, opacity: 0.80, delay: 0.04, duration: 0.50 }, // 1: 'O' (from right & slightly down)
-  { x: -30, y: 14,  rotate: -6, rotateY: 0,   scale: 0.95, opacity: 0.78, delay: 0.08, duration: 0.50 }, // 2: 'D' (from left & slightly down)
-  { x: 30,  y: -14, rotate: 5,  rotateY: 0,   scale: 1.03, opacity: 0.80, delay: 0.12, duration: 0.50 }, // 3: 'E' (from right & slightly up)
-  { x: -28, y: -12, rotate: -5, rotateY: 0,   scale: 0.96, opacity: 0.78, delay: 0.16, duration: 0.50 }, // 4: 'R' (from left & slightly up)
-  { x: 28,  y: 12,  rotate: 6,  rotateY: 0,   scale: 1.04, opacity: 0.80, delay: 0.20, duration: 0.50 }, // 5: 'N' (from right & slightly down)
+  { x: -32, y: -14, rotate: -5, rotateY: 0, scale: 0.94, opacity: 0.78, delay: 0.00, duration: 0.50 }, // 0: 'M' (from left & slightly up)
+  { x: 32, y: 14, rotate: 6, rotateY: 0, scale: 1.04, opacity: 0.80, delay: 0.04, duration: 0.50 }, // 1: 'O' (from right & slightly down)
+  { x: -30, y: 14, rotate: -6, rotateY: 0, scale: 0.95, opacity: 0.78, delay: 0.08, duration: 0.50 }, // 2: 'D' (from left & slightly down)
+  { x: 30, y: -14, rotate: 5, rotateY: 0, scale: 1.03, opacity: 0.80, delay: 0.12, duration: 0.50 }, // 3: 'E' (from right & slightly up)
+  { x: -28, y: -12, rotate: -5, rotateY: 0, scale: 0.96, opacity: 0.78, delay: 0.16, duration: 0.50 }, // 4: 'R' (from left & slightly up)
+  { x: 28, y: 12, rotate: 6, rotateY: 0, scale: 1.04, opacity: 0.80, delay: 0.20, duration: 0.50 }, // 5: 'N' (from right & slightly down)
 
   // --------------------------------------------------------------------------
   // 2. RESPONSIVE: Controlled wave shifting into alignment (R, E, S, P, O, N, S, I, V, E)
   // Alternating vertical wave with subtle horizontal 3D flip (rotateY)
   // --------------------------------------------------------------------------
-  { x: -8, y: -24, rotate: 0,  rotateY: -14, scale: 0.96, opacity: 0.80, delay: 0.22, duration: 0.52 }, // 6: 'R' (wave up, tilt left)
-  { x: 6,  y: 22,  rotate: 0,  rotateY: 14,  scale: 1.03, opacity: 0.80, delay: 0.26, duration: 0.52 }, // 7: 'E' (wave down, tilt right)
-  { x: -6, y: -22, rotate: 0,  rotateY: -14, scale: 0.96, opacity: 0.80, delay: 0.30, duration: 0.52 }, // 8: 'S' (wave up, tilt left)
-  { x: 6,  y: 20,  rotate: 0,  rotateY: 12,  scale: 1.02, opacity: 0.80, delay: 0.34, duration: 0.52 }, // 9: 'P' (wave down, tilt right)
-  { x: -5, y: -20, rotate: 0,  rotateY: -12, scale: 0.97, opacity: 0.80, delay: 0.38, duration: 0.52 }, // 10: 'O' (wave up, tilt left)
-  { x: 5,  y: 18,  rotate: 0,  rotateY: 12,  scale: 1.02, opacity: 0.80, delay: 0.42, duration: 0.52 }, // 11: 'N' (wave down, tilt right)
-  { x: -5, y: -18, rotate: 0,  rotateY: -10, scale: 0.97, opacity: 0.80, delay: 0.46, duration: 0.52 }, // 12: 'S' (wave up, tilt left)
-  { x: 4,  y: 16,  rotate: 0,  rotateY: 10,  scale: 1.02, opacity: 0.82, delay: 0.50, duration: 0.52 }, // 13: 'I' (wave down, tilt right)
-  { x: -4, y: -16, rotate: 0,  rotateY: -10, scale: 0.98, opacity: 0.80, delay: 0.54, duration: 0.52 }, // 14: 'V' (wave up, tilt left)
-  { x: 4,  y: 14,  rotate: 0,  rotateY: 8,   scale: 1.02, opacity: 0.82, delay: 0.58, duration: 0.52 }, // 15: 'E' (wave down, tilt right)
+  { x: -8, y: -24, rotate: 0, rotateY: -14, scale: 0.96, opacity: 0.80, delay: 0.22, duration: 0.52 }, // 6: 'R' (wave up, tilt left)
+  { x: 6, y: 22, rotate: 0, rotateY: 14, scale: 1.03, opacity: 0.80, delay: 0.26, duration: 0.52 }, // 7: 'E' (wave down, tilt right)
+  { x: -6, y: -22, rotate: 0, rotateY: -14, scale: 0.96, opacity: 0.80, delay: 0.30, duration: 0.52 }, // 8: 'S' (wave up, tilt left)
+  { x: 6, y: 20, rotate: 0, rotateY: 12, scale: 1.02, opacity: 0.80, delay: 0.34, duration: 0.52 }, // 9: 'P' (wave down, tilt right)
+  { x: -5, y: -20, rotate: 0, rotateY: -12, scale: 0.97, opacity: 0.80, delay: 0.38, duration: 0.52 }, // 10: 'O' (wave up, tilt left)
+  { x: 5, y: 18, rotate: 0, rotateY: 12, scale: 1.02, opacity: 0.80, delay: 0.42, duration: 0.52 }, // 11: 'N' (wave down, tilt right)
+  { x: -5, y: -18, rotate: 0, rotateY: -10, scale: 0.97, opacity: 0.80, delay: 0.46, duration: 0.52 }, // 12: 'S' (wave up, tilt left)
+  { x: 4, y: 16, rotate: 0, rotateY: 10, scale: 1.02, opacity: 0.82, delay: 0.50, duration: 0.52 }, // 13: 'I' (wave down, tilt right)
+  { x: -4, y: -16, rotate: 0, rotateY: -10, scale: 0.98, opacity: 0.80, delay: 0.54, duration: 0.52 }, // 14: 'V' (wave up, tilt left)
+  { x: 4, y: 14, rotate: 0, rotateY: 8, scale: 1.02, opacity: 0.82, delay: 0.58, duration: 0.52 }, // 15: 'E' (wave down, tilt right)
 
   // --------------------------------------------------------------------------
   // 3. WEBSITES: Settling crisply into final baseline (W, E, B, S, I, T, E, S)
   // Upward slide into baseline from below with slight scale expansion
   // --------------------------------------------------------------------------
-  { x: -6, y: 28,  rotate: -3, rotateY: 0,   scale: 0.92, opacity: 0.80, delay: 0.60, duration: 0.52 }, // 16: 'W' (settle to baseline)
-  { x: 0,  y: 26,  rotate: 2,  rotateY: 0,   scale: 0.93, opacity: 0.82, delay: 0.64, duration: 0.52 }, // 17: 'E' (settle to baseline)
-  { x: -4, y: 28,  rotate: -2, rotateY: 0,   scale: 0.92, opacity: 0.80, delay: 0.68, duration: 0.52 }, // 18: 'B' (settle to baseline)
-  { x: 0,  y: 26,  rotate: 2,  rotateY: 0,   scale: 0.93, opacity: 0.82, delay: 0.72, duration: 0.52 }, // 19: 'S' (settle to baseline)
-  { x: -2, y: 28,  rotate: -1, rotateY: 0,   scale: 0.94, opacity: 0.84, delay: 0.76, duration: 0.52 }, // 20: 'I' (settle to baseline)
-  { x: 0,  y: 26,  rotate: 2,  rotateY: 0,   scale: 0.93, opacity: 0.82, delay: 0.80, duration: 0.52 }, // 21: 'T' (settle to baseline)
-  { x: -2, y: 28,  rotate: -1, rotateY: 0,   scale: 0.94, opacity: 0.84, delay: 0.84, duration: 0.52 }, // 22: 'E' (settle to baseline)
-  { x: 2,  y: 26,  rotate: 2,  rotateY: 0,   scale: 0.94, opacity: 0.84, delay: 0.88, duration: 0.52 }, // 23: 'S' (settle to baseline)
+  { x: -6, y: 28, rotate: -3, rotateY: 0, scale: 0.92, opacity: 0.80, delay: 0.60, duration: 0.52 }, // 16: 'W' (settle to baseline)
+  { x: 0, y: 26, rotate: 2, rotateY: 0, scale: 0.93, opacity: 0.82, delay: 0.64, duration: 0.52 }, // 17: 'E' (settle to baseline)
+  { x: -4, y: 28, rotate: -2, rotateY: 0, scale: 0.92, opacity: 0.80, delay: 0.68, duration: 0.52 }, // 18: 'B' (settle to baseline)
+  { x: 0, y: 26, rotate: 2, rotateY: 0, scale: 0.93, opacity: 0.82, delay: 0.72, duration: 0.52 }, // 19: 'S' (settle to baseline)
+  { x: -2, y: 28, rotate: -1, rotateY: 0, scale: 0.94, opacity: 0.84, delay: 0.76, duration: 0.52 }, // 20: 'I' (settle to baseline)
+  { x: 0, y: 26, rotate: 2, rotateY: 0, scale: 0.93, opacity: 0.82, delay: 0.80, duration: 0.52 }, // 21: 'T' (settle to baseline)
+  { x: -2, y: 28, rotate: -1, rotateY: 0, scale: 0.94, opacity: 0.84, delay: 0.84, duration: 0.52 }, // 22: 'E' (settle to baseline)
+  { x: 2, y: 26, rotate: 2, rotateY: 0, scale: 0.94, opacity: 0.84, delay: 0.88, duration: 0.52 }, // 23: 'S' (settle to baseline)
 ];
 
 // Hook to handle automatic initial execution and responsive replay on scroll returns
@@ -102,6 +102,20 @@ export function useHeroReplayTrigger(): number {
     let ticking = false;
     let isDeepScrolled = false;
     let isAtTopArmed = false;
+    let cachedHeroHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+    const measureHero = () => {
+      const heroEl =
+        document.getElementById('hero-section-wrapper') ||
+        document.getElementById('main-hero');
+      if (heroEl && heroEl.offsetHeight > 0) {
+        cachedHeroHeight = heroEl.offsetHeight;
+      } else if (typeof window !== 'undefined') {
+        cachedHeroHeight = window.innerHeight;
+      }
+    };
+
+    measureHero();
 
     const checkScroll = () => {
       if (ticking) return;
@@ -109,10 +123,7 @@ export function useHeroReplayTrigger(): number {
 
       requestAnimationFrame(() => {
         const y = window.scrollY || document.documentElement.scrollTop || 0;
-        const heroEl =
-          document.getElementById('hero-section-wrapper') ||
-          document.getElementById('main-hero');
-        const heroHeight = heroEl ? heroEl.offsetHeight : window.innerHeight;
+        const heroHeight = cachedHeroHeight;
 
         // 1. Scrolled deep past Hero (Hero is off-screen):
         if (y > heroHeight * 0.85) {
@@ -142,12 +153,17 @@ export function useHeroReplayTrigger(): number {
       });
     };
 
+    const handleResize = () => {
+      measureHero();
+      checkScroll();
+    };
+
     window.addEventListener('scroll', checkScroll, { passive: true });
-    window.addEventListener('resize', checkScroll, { passive: true });
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', checkScroll);
-      window.removeEventListener('resize', checkScroll);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 

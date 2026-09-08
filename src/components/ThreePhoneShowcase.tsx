@@ -36,13 +36,22 @@ import {
 } from 'lucide-react';
 import { ScrollPhoneHeading, ScrollLineReveal } from './MotionTypography.tsx';
 
-// Typewriter hook for character-by-character animated display
-function useTypewriter(text: string, delay: number = 0, speed: number = 24) {
+// Typewriter hook for character-by-character animated display (viewport-triggered)
+function useTypewriter(
+  text: string,
+  delay: number = 0,
+  speed: number = 24,
+  enabled: boolean = true
+) {
   const [displayedText, setDisplayedText] = useState('');
+  const hasStarted = useRef(false);
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let intervalId: NodeJS.Timeout;
+    if (!enabled || hasStarted.current) return;
+    hasStarted.current = true;
+
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let intervalId: ReturnType<typeof setInterval>;
 
     timeoutId = setTimeout(() => {
       let currentIndex = 0;
@@ -59,7 +68,7 @@ function useTypewriter(text: string, delay: number = 0, speed: number = 24) {
       clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
-  }, [text, delay, speed]);
+  }, [text, delay, speed, enabled]);
 
   return displayedText;
 }
@@ -77,10 +86,38 @@ function TypewriterText({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const currentText = useTypewriter(text, delay, speed);
+  const [isVisible, setIsVisible] = useState(false);
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    const el = spanRef.current;
+    if (!el || isVisible) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '250px 0px 250px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  const currentText = useTypewriter(
+    text,
+    delay,
+    speed,
+    shouldReduceMotion ? true : isVisible
+  );
+
   return (
-    <span className={className} style={style}>
-      {currentText}
+    <span ref={spanRef} className={className} style={style}>
+      {shouldReduceMotion ? text : currentText}
     </span>
   );
 }
@@ -135,6 +172,8 @@ function GymMobileWebsite() {
         <img
           src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=85"
           alt="Gym athlete training"
+          loading="eager"
+          decoding="async"
           className="w-full h-full object-cover object-top opacity-60"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#090A0E]/60 via-[#090A0E]/20 to-[#090A0E]" />
@@ -809,7 +848,10 @@ function PharmacyMobileWebsite() {
       </header>
 
       {/* Main Content Area (Scrollable within phone viewport) */}
-      <div className="flex-1 overflow-y-auto px-[18px] py-3.5 space-y-3.5">
+      <div
+        className="flex-1 overflow-y-auto px-[18px] py-3.5 space-y-3.5"
+        style={{ touchAction: 'pan-y' }}
+      >
         {/* Search Input for medications */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
@@ -837,6 +879,8 @@ function PharmacyMobileWebsite() {
           <img
             src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80"
             alt="Pharmacy medication care"
+            loading="eager"
+            decoding="async"
             className="absolute right-0 top-0 bottom-0 w-36 object-cover opacity-25 mix-blend-overlay pointer-events-none"
           />
           <div className="relative z-10 max-w-[230px]">
@@ -1537,12 +1581,17 @@ function RetailMobileWebsite() {
       </header>
 
       {/* Main Retail Showcase Scroll View */}
-      <div className="flex-1 overflow-y-auto px-[18px] py-3.5 space-y-4">
+      <div
+        className="flex-1 overflow-y-auto px-[18px] py-3.5 space-y-4"
+        style={{ touchAction: 'pan-y' }}
+      >
         {/* Editorial Hero Visual with Campaign Tag */}
         <div className="relative rounded-2xl overflow-hidden shadow-sm aspect-[4/3] bg-[#E7E2D9]">
           <img
             src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85"
             alt="Atelier luxury collection"
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
@@ -1593,6 +1642,8 @@ function RetailMobileWebsite() {
                     <img
                       src={prod.img}
                       alt={prod.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </button>
@@ -2005,6 +2056,24 @@ function RetailMobileWebsite() {
   );
 }
 
+const IPHONE_PRELOAD_URLS = [
+  'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=800&q=85',
+  'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=85',
+];
+
+function preloadPhoneAssets() {
+  if (typeof window === 'undefined') return;
+  IPHONE_PRELOAD_URLS.forEach((url) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = url;
+    if (img.decode) {
+      img.decode().catch(() => {});
+    }
+  });
+}
+
 // ============================================================================
 // IPHONE FRAME WRAPPER
 // Exact 375x812 artboard inside black rounded frame (borderRadius 50, borderWidth 2, borderColor #2a2a2a),
@@ -2039,8 +2108,10 @@ function IPhoneFrame({
           borderColor: '#2a2a2a',
           boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
           backgroundColor: '#000000',
-          transform: `scale(${scale})`,
+          transform: `scale(${scale}) translateZ(0)`,
           transformOrigin: 'top left',
+          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: 'hidden',
           position: 'absolute',
           top: 0,
           left: 0,
@@ -2049,7 +2120,12 @@ function IPhoneFrame({
         {/* Screen artboard (375x812 rounded inner frame) - Isolated Stacking Context */}
         <div
           className="w-full h-full rounded-[48px] overflow-hidden relative z-10"
-          style={{ isolation: 'isolate' }}
+          style={{
+            isolation: 'isolate',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            transform: 'translateZ(0)',
+          }}
         >
           {children}
         </div>
@@ -2110,12 +2186,35 @@ export default function ThreePhoneShowcase() {
     offset: ['start 86%', 'center 46%'],
   });
 
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 1024;
+
   const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 90,
-    damping: 24,
-    mass: 0.2,
+    stiffness: isMobileViewport ? 140 : 90,
+    damping: isMobileViewport ? 26 : 24,
+    mass: isMobileViewport ? 0.1 : 0.2,
     restDelta: 0.001,
   });
+
+  // Intelligent preloading of phone assets when approaching viewport
+  React.useEffect(() => {
+    const sec = sectionRef.current;
+    if (!sec) return;
+
+    let preloaded = false;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !preloaded) {
+          preloaded = true;
+          preloadPhoneAssets();
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '500px 0px 500px 0px', threshold: 0.01 }
+    );
+
+    observer.observe(sec);
+    return () => observer.disconnect();
+  }, []);
 
   // Staggered Multi-Directional Entrance Trajectories:
   // PHONE 1: Enters from LEFT side (progress [0.0, 0.72])
@@ -2204,8 +2303,10 @@ export default function ThreePhoneShowcase() {
             style={{
               width: BASE_GROUP_W,
               height: BASE_GROUP_H,
-              transform: `scale(${groupScale})`,
+              transform: `scale(${groupScale}) translateZ(0)`,
               transformOrigin: 'top left',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
               position: 'absolute',
               top: 0,
               left: 0,
@@ -2225,6 +2326,9 @@ export default function ThreePhoneShowcase() {
                 opacity: phone1Opacity,
                 transformOrigin: 'center center',
                 willChange: 'transform, opacity',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>
@@ -2246,6 +2350,9 @@ export default function ThreePhoneShowcase() {
                 opacity: phone2Opacity,
                 transformOrigin: 'center center',
                 willChange: 'transform, opacity',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>
@@ -2269,6 +2376,9 @@ export default function ThreePhoneShowcase() {
                 opacity: phone3Opacity,
                 transformOrigin: 'center center',
                 willChange: 'transform, opacity',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
+                transform: 'translateZ(0)',
               }}
             >
               <IPhoneFrame scale={1}>
